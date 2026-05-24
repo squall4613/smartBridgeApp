@@ -298,53 +298,49 @@ class _MyAppState extends State<MyApp> {
       ThemeData(useMaterial3: true, brightness: brightness).textTheme,
     ).apply(bodyColor: scheme.onSurface, displayColor: scheme.onSurface);
 
+    // Minimalistic, high-contrast theme: cleaner surfaces, larger tappables,
+    // subtle rounded corners, and reduced chrome to avoid a technical look.
+    final Color primary = brightness == Brightness.dark
+        ? const Color(0xFF6AF6ED)
+        : const Color(0xFF006F69);
+
     return ThemeData(
       useMaterial3: true,
-      colorScheme: scheme,
+      colorScheme: ColorScheme.fromSeed(seedColor: _seedColor, brightness: brightness),
       textTheme: appTextTheme,
-      primaryTextTheme: appTextTheme,
-      scaffoldBackgroundColor: scheme.surface,
-      cardTheme: CardThemeData(
-        elevation: 0,
-        color: brightness == Brightness.dark
-            ? scheme.surfaceContainerHighest.withValues(alpha: 0.78)
-            : scheme.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: BorderSide(color: scheme.outlineVariant, width: 1.2),
-        ),
-      ),
+      scaffoldBackgroundColor: brightness == Brightness.dark ? const Color(0xFF0B0B0C) : Colors.white,
       appBarTheme: AppBarTheme(
         elevation: 0,
-        scrolledUnderElevation: 0,
-        backgroundColor: brightness == Brightness.dark
-            ? scheme.surfaceContainer
-            : scheme.surface,
-        foregroundColor: scheme.onSurface,
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        foregroundColor: brightness == Brightness.dark ? Colors.white : Colors.black,
+        titleTextStyle: appTextTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+        toolbarHeight: 64,
       ),
-      navigationBarTheme: NavigationBarThemeData(
+      cardTheme: CardThemeData(
         elevation: 0,
-        backgroundColor: brightness == Brightness.dark
-            ? scheme.surfaceContainer
-            : scheme.surface,
-        indicatorColor: brightness == Brightness.dark
-            ? scheme.primary.withValues(alpha: 0.24)
-            : scheme.primaryContainer,
+        color: brightness == Brightness.dark ? const Color(0xFF0F1112) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
-      chipTheme: ChipThemeData(
-        side: BorderSide(color: scheme.outlineVariant),
-        backgroundColor: brightness == Brightness.dark
-            ? scheme.surfaceContainerHighest.withValues(alpha: 0.7)
-            : scheme.surfaceContainerHighest.withValues(alpha: 0.55),
-        labelStyle: TextStyle(color: scheme.onSurface),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          elevation: 0,
+          backgroundColor: primary,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 14.0, horizontal: 20.0),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          textStyle: appTextTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+        ),
       ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(foregroundColor: primary),
+      ),
+      iconTheme: IconThemeData(color: brightness == Brightness.dark ? Colors.white : Colors.black, size: 22),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: scheme.surfaceContainerHighest.withValues(alpha: 0.72),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: scheme.outlineVariant),
-        ),
+        fillColor: brightness == Brightness.dark ? const Color(0xFF121315) : const Color(0xFFF3F4F6),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+        contentPadding: const EdgeInsets.symmetric(vertical: 14.0, horizontal: 16.0),
       ),
     );
   }
@@ -1867,15 +1863,15 @@ class _TranslatorPageState extends State<TranslatorPage>
         children: [
           Icon(Icons.videocam_off_outlined, color: scheme.onSurfaceVariant),
           const SizedBox(height: 8),
-          Text(
-            'Camera stopped',
-            style: TextStyle(color: scheme.onSurfaceVariant),
-          ),
+          const SizedBox.shrink(),
           const SizedBox(height: 12),
-          FilledButton.icon(
+          ElevatedButton(
             onPressed: _startCamera,
-            icon: const Icon(Icons.play_arrow),
-            label: const Text('Start Camera'),
+            style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [Icon(Icons.play_arrow), SizedBox(width: 8), Text('Start')],
+            ),
           ),
         ],
       );
@@ -1927,81 +1923,21 @@ class _TranslatorPageState extends State<TranslatorPage>
               builder: (BuildContext context, BoxConstraints constraints) {
                 final bool compact = constraints.maxWidth < 640;
 
-                if (compact) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Row(
-                        children: [
-                          Icon(Icons.videocam_outlined),
-                          SizedBox(width: 8),
-                          Text(
-                            'Sign Recognition',
-                            style: TextStyle(fontWeight: FontWeight.w700),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          IconButton(
-                            tooltip: _isCameraRunning
-                                ? 'Stop camera'
-                                : 'Start camera',
-                            onPressed: _isCameraRunning
-                                ? _stopCamera
-                                : _startCamera,
-                            icon: Icon(
-                              _isCameraRunning
-                                  ? Icons.stop_circle_outlined
-                                  : Icons.play_circle_outline,
-                            ),
-                          ),
-                          IconButton(
-                            tooltip: 'Switch camera',
-                            onPressed: _switchCamera,
-                            icon: const Icon(Icons.cameraswitch_outlined),
-                          ),
-                          IconButton(
-                            tooltip: 'Snapshot',
-                            onPressed: _captureSnapshot,
-                            icon: const Icon(Icons.photo_camera_outlined),
-                          ),
-                        ],
-                      ),
-                    ],
-                  );
-                }
-
+                // Minimal control row: only essential actions
                 return Row(
                   children: [
-                    const Icon(Icons.videocam_outlined),
+                    Icon(Icons.videocam_outlined, color: scheme.onSurfaceVariant),
                     const SizedBox(width: 8),
-                    const Text(
-                      'Sign Recognition',
-                      style: TextStyle(fontWeight: FontWeight.w700),
-                    ),
                     const Spacer(),
                     IconButton(
-                      tooltip: _isCameraRunning
-                          ? 'Stop camera'
-                          : 'Start camera',
+                      tooltip: _isCameraRunning ? 'Stop' : 'Start',
                       onPressed: _isCameraRunning ? _stopCamera : _startCamera,
-                      icon: Icon(
-                        _isCameraRunning
-                            ? Icons.stop_circle_outlined
-                            : Icons.play_circle_outline,
-                      ),
+                      icon: Icon(_isCameraRunning ? Icons.stop : Icons.play_arrow),
                     ),
                     IconButton(
-                      tooltip: 'Switch camera',
+                      tooltip: 'Switch',
                       onPressed: _switchCamera,
                       icon: const Icon(Icons.cameraswitch_outlined),
-                    ),
-                    IconButton(
-                      tooltip: 'Snapshot',
-                      onPressed: _captureSnapshot,
-                      icon: const Icon(Icons.photo_camera_outlined),
                     ),
                   ],
                 );
@@ -2054,26 +1990,26 @@ class _TranslatorPageState extends State<TranslatorPage>
       children: [
         Card(
           child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
               children: [
-                Chip(
-                  label: Text(
-                    _permissionsGranted
-                        ? 'Permissions: OK'
-                        : 'Permissions: Required',
+                Chip(label: Text(_permissionsGranted ? 'Permissions: OK' : 'Permissions: Required')),
+                const SizedBox(width: 8),
+                Chip(label: Text(_isModelLoaded ? 'Model: Ready' : 'Model: Loading')),
+                const SizedBox(width: 8),
+                Chip(label: Text(_isFallbackMode ? 'Mode: Manual' : 'Mode: AI')),
+                const Spacer(),
+                // compact recognized text preview
+                if (_recognizedText.isNotEmpty)
+                  Flexible(
+                    child: Text(
+                      _recognizedText,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                    ),
                   ),
-                ),
-                Chip(
-                  label: Text(
-                    _isModelLoaded ? 'Model: Ready' : 'Model: Loading',
-                  ),
-                ),
-                Chip(
-                  label: Text(_isFallbackMode ? 'Mode: Manual' : 'Mode: AI'),
-                ),
               ],
             ),
           ),
@@ -2351,7 +2287,7 @@ class HistoryPage extends StatelessWidget {
               color: Theme.of(context).colorScheme.outline,
             ),
             const SizedBox(height: 10),
-            const Text('No translation history yet.'),
+            const Text('No history yet.'),
           ],
         ),
       );
@@ -2363,10 +2299,10 @@ class HistoryPage extends StatelessWidget {
           alignment: Alignment.centerRight,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
-            child: TextButton.icon(
+            child: IconButton(
               onPressed: onClearHistory,
               icon: const Icon(Icons.delete_outline),
-              label: const Text('Clear history'),
+              tooltip: 'Clear',
             ),
           ),
         ),
@@ -2380,12 +2316,8 @@ class HistoryPage extends StatelessWidget {
               return Card(
                 child: ListTile(
                   leading: Icon(_iconForType(item.type)),
-                  title: Text(item.text),
-                  subtitle: Text(
-                    item.confidence == null
-                        ? _formatTime(item.timestamp)
-                        : '${item.confidence}% confidence - ${_formatTime(item.timestamp)}',
-                  ),
+                  title: Text(item.text, maxLines: 1, overflow: TextOverflow.ellipsis),
+                  subtitle: Text(_formatTime(item.timestamp)),
                 ),
               );
             },
@@ -2446,15 +2378,7 @@ class SettingsPage extends StatelessWidget {
                   style: TextStyle(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 10),
-                const Text('Theme mode'),
-                const SizedBox(height: 6),
-                Text(
-                  prefs.themeMode == ThemeMode.system
-                      ? 'Following device appearance (${MediaQuery.platformBrightnessOf(context) == Brightness.dark ? 'currently dark' : 'currently light'}).'
-                      : 'Manual theme override is active for SmartBridge.',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
                 LayoutBuilder(
                   builder: (BuildContext context, BoxConstraints constraints) {
                     final bool compact = constraints.maxWidth < 420;
@@ -2524,29 +2448,32 @@ class SettingsPage extends StatelessWidget {
                     onPreferencesChanged(prefs.copyWith(textScale: value));
                   },
                 ),
-                SwitchListTile.adaptive(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('High contrast mode'),
-                  value: prefs.highContrast,
-                  onChanged: (bool value) {
-                    onPreferencesChanged(prefs.copyWith(highContrast: value));
-                  },
+                Row(
+                  children: [
+                    Expanded(child: const Text('High contrast')),
+                    Switch.adaptive(
+                      value: prefs.highContrast,
+                      onChanged: (bool value) => onPreferencesChanged(prefs.copyWith(highContrast: value)),
+                    ),
+                  ],
                 ),
-                SwitchListTile.adaptive(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Reduce motion'),
-                  value: prefs.reduceMotion,
-                  onChanged: (bool value) {
-                    onPreferencesChanged(prefs.copyWith(reduceMotion: value));
-                  },
+                Row(
+                  children: [
+                    Expanded(child: const Text('Reduce motion')),
+                    Switch.adaptive(
+                      value: prefs.reduceMotion,
+                      onChanged: (bool value) => onPreferencesChanged(prefs.copyWith(reduceMotion: value)),
+                    ),
+                  ],
                 ),
-                SwitchListTile.adaptive(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Enable haptic feedback'),
-                  value: prefs.hapticsEnabled,
-                  onChanged: (bool value) {
-                    onPreferencesChanged(prefs.copyWith(hapticsEnabled: value));
-                  },
+                Row(
+                  children: [
+                    Expanded(child: const Text('Haptics')),
+                    Switch.adaptive(
+                      value: prefs.hapticsEnabled,
+                      onChanged: (bool value) => onPreferencesChanged(prefs.copyWith(hapticsEnabled: value)),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -2563,13 +2490,14 @@ class SettingsPage extends StatelessWidget {
                   style: TextStyle(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 10),
-                SwitchListTile.adaptive(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Auto-speak recognized signs'),
-                  value: prefs.autoSpeakSigns,
-                  onChanged: (bool value) {
-                    onPreferencesChanged(prefs.copyWith(autoSpeakSigns: value));
-                  },
+                Row(
+                  children: [
+                    Expanded(child: const Text('Auto-speak')),
+                    Switch.adaptive(
+                      value: prefs.autoSpeakSigns,
+                      onChanged: (bool value) => onPreferencesChanged(prefs.copyWith(autoSpeakSigns: value)),
+                    ),
+                  ],
                 ),
                 _LabeledSlider(
                   label: 'Recognition threshold',
@@ -2577,12 +2505,9 @@ class SettingsPage extends StatelessWidget {
                   min: 10,
                   max: 95,
                   divisions: 17,
-                  valueLabel:
-                      '${prefs.recognitionThreshold.toStringAsFixed(0)}%',
+                  valueLabel: '${prefs.recognitionThreshold.toStringAsFixed(0)}%',
                   onChanged: (double value) {
-                    onPreferencesChanged(
-                      prefs.copyWith(recognitionThreshold: value),
-                    );
+                    onPreferencesChanged(prefs.copyWith(recognitionThreshold: value));
                   },
                 ),
                 _LabeledSlider(
@@ -2591,16 +2516,13 @@ class SettingsPage extends StatelessWidget {
                   min: 35,
                   max: 99,
                   divisions: 16,
-                  valueLabel:
-                      '${prefs.historyConfidenceThreshold.toStringAsFixed(0)}%',
+                  valueLabel: '${prefs.historyConfidenceThreshold.toStringAsFixed(0)}%',
                   onChanged: (double value) {
-                    onPreferencesChanged(
-                      prefs.copyWith(historyConfidenceThreshold: value),
-                    );
+                    onPreferencesChanged(prefs.copyWith(historyConfidenceThreshold: value));
                   },
                 ),
                 _LabeledSlider(
-                  label: 'Frame processing step',
+                  label: 'Frame stride',
                   value: prefs.frameStride.toDouble(),
                   min: 1,
                   max: 5,

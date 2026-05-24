@@ -9,6 +9,25 @@ import 'package:flutter/services.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 import 'package:hand_landmarker/hand_landmarker.dart';
 
+enum ModelType {
+  senyas(
+    'Senyas FSL (Original)',
+    'assets/models/model_float32.tflite',
+    'assets/models/labels.txt',
+  ),
+  fsl(
+    'Filipino Sign Language (FSL)',
+    'assets/models/fsl_model.tflite',
+    'assets/models/fsl_labels.txt',
+  );
+
+  const ModelType(this.displayName, this.modelPath, this.labelsPath);
+
+  final String displayName;
+  final String modelPath;
+  final String labelsPath;
+}
+
 class SignPrediction {
   final String label;
   final double confidence;
@@ -204,17 +223,25 @@ class ModelService {
 
   factory ModelService() => _instance;
 
-  ModelService._internal();
-
   static const int _defaultInputSize = 64;
   static const int _defaultInputChannels = 3;
   static const int _defaultFeatureCount = 64;
   static const int _sequenceLength = 30;
   static const int _sequenceFeatureCount = 258;
-  static const String _modelAssetPath = 'assets/models/model_float32.tflite';
-  static const String _labelsAssetPath = 'assets/models/labels.txt';
   static const int _renderCanvasSize = 600;
   static const MethodChannel _modelChannel = MethodChannel('smartbridge/lstm');
+
+  // Current model selection
+  ModelType _currentModel = ModelType.senyas;
+
+  // Model paths (updated based on current model selection)
+  late String _modelAssetPath;
+  late String _labelsAssetPath;
+
+  // Initialize model paths in constructor
+  ModelService._internal() {
+    _updateModelPaths();
+  }
 
   // MediaPipe hand topology edges.
   static const List<List<int>> _handConnections = [
@@ -287,6 +314,32 @@ class ModelService {
   bool get isModelLoaded => _isModelLoaded;
   List<String> get signLabels => _signLabels;
   ModelDebugInfo get debugInfo => _lastDebugInfo;
+  ModelType get currentModel => _currentModel;
+
+  /// Get list of available models
+  List<ModelType> getAvailableModels() => ModelType.values;
+
+  /// Switch to a different model (requires reloading)
+  Future<void> setModel(ModelType model) async {
+    if (_currentModel == model) {
+      return;
+    }
+
+    // Unload current model
+    await dispose();
+
+    _currentModel = model;
+    _updateModelPaths();
+
+    // Reload with new model
+    await loadModel();
+  }
+
+  /// Update internal paths based on current model selection
+  void _updateModelPaths() {
+    _modelAssetPath = _currentModel.modelPath;
+    _labelsAssetPath = _currentModel.labelsPath;
+  }
 
   Future<void> loadModel() async {
     try {
@@ -474,8 +527,9 @@ class ModelService {
     _modelInputChannels = channels.clamp(1, 4);
     _inputIsNchw = isNchw;
     _expectedInputElements = _computeExpectedInputElements(shape);
-    _usesSequenceInput = shape.length == 3 &&
-      _expectedInputElements >= (_sequenceLength * _sequenceFeatureCount);
+    _usesSequenceInput =
+        shape.length == 3 &&
+        _expectedInputElements >= (_sequenceLength * _sequenceFeatureCount);
     _usesLandmarkVectorInput = landmarkVectorInput && !_usesSequenceInput;
   }
 
@@ -720,10 +774,7 @@ class ModelService {
     }
   }
 
-  InputImage? _buildPoseInputImage(
-    CameraImage image,
-    int sensorOrientation,
-  ) {
+  InputImage? _buildPoseInputImage(CameraImage image, int sensorOrientation) {
     final InputImageFormat? imageFormat = InputImageFormatValue.fromRawValue(
       image.format.raw,
     );
@@ -851,10 +902,7 @@ class ModelService {
     required Pose? pose,
     required List<Hand> hands,
   }) {
-    final List<double> frame = List<double>.filled(
-      _sequenceFeatureCount,
-      0.0,
-    );
+    final List<double> frame = List<double>.filled(_sequenceFeatureCount, 0.0);
 
     _writePoseFeatures(
       frame: frame,
@@ -918,7 +966,9 @@ class ModelService {
       }
 
       frame[base] = imageWidth > 0 ? (landmark.x / imageWidth) : landmark.x;
-      frame[base + 1] = imageHeight > 0 ? (landmark.y / imageHeight) : landmark.y;
+      frame[base + 1] = imageHeight > 0
+          ? (landmark.y / imageHeight)
+          : landmark.y;
       frame[base + 2] = landmark.z;
       frame[base + 3] = landmark.likelihood;
     }
@@ -953,8 +1003,10 @@ class ModelService {
       return 0.5;
     }
 
-    final PoseLandmark? leftShoulder = pose.landmarks[PoseLandmarkType.leftShoulder];
-    final PoseLandmark? rightShoulder = pose.landmarks[PoseLandmarkType.rightShoulder];
+    final PoseLandmark? leftShoulder =
+        pose.landmarks[PoseLandmarkType.leftShoulder];
+    final PoseLandmark? rightShoulder =
+        pose.landmarks[PoseLandmarkType.rightShoulder];
     if (leftShoulder != null && rightShoulder != null) {
       return (leftShoulder.x + rightShoulder.x) / 2.0;
     }
@@ -970,7 +1022,10 @@ class ModelService {
       return 0.5;
     }
 
-    final double sum = landmarks.fold<double>(0.0, (double acc, PoseLandmark landmark) {
+    final double sum = landmarks.fold<double>(0.0, (
+      double acc,
+      PoseLandmark landmark,
+    ) {
       return acc + landmark.x;
     });
     return sum / landmarks.length;
