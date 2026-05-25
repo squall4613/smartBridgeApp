@@ -1,5 +1,8 @@
 # SmartBridge App
 
+SmartBridge overview: https://smart-bridge-overview-mab7.vercel.app/?fbclid=IwY2xjawSAqWRleHRuA2FlbQIxMQBzcnRjBmFwcF9pZAwzNTA2ODU1MzE3MjgAAR6b1PCdYeOpCJoQxXDF07yeHR9kg-TRsXsroG3gHGRD6JG4aJ11JNCPChQdFQ_aem_2vACyEhBoZ9WXJBkTlbrnQ
+
+
 SmartBridge is a Flutter-based communication assistant that combines:
 
 - Real-time sign recognition using camera and landmark-based model inference
