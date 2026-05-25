@@ -1,4 +1,4 @@
-# Senyas FSL — TFLite Conversion Package
+# Sen FSL — TFLite Conversion Package
 
 **Filipino Sign Language Recognition • TensorFlow Lite • Production-Ready**
 
